@@ -87,6 +87,7 @@ input:focus, select:focus { outline: 0; border-bottom-width: 2px; padding-bottom
 .opt input::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); transform: scale(0); transition: transform .15s; }
 .opt input:checked::after { transform: scale(1); }
 .opt:has(input:checked) { border-color: var(--gold); background: var(--gold-soft); }
+.deadline { display: block; margin-top: 12px; padding: 10px 12px; border-left: 2px solid var(--gold); background: var(--gold-soft); font-family: var(--serif); font-size: 17px; letter-spacing: 0; text-transform: none; color: var(--ink); line-height: 1.35; }
 .hp { position: absolute; left: -9999px; }
 .msg { margin-top: 14px; font-size: 17px; }
 .msg.err { color: var(--no); }

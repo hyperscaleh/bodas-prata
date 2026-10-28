@@ -42,6 +42,7 @@
     </div>
     <label class="f" id="laterBox" hidden>Em que dia consegue confirmar?
       <input type="date" id="laterDate">
+      <span class="deadline">Importante: o prazo final para confirmar é <b>30 de novembro de 2026</b>.</span>
     </label>
     <input class="hp" type="text" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
     <button class="btn" type="submit" id="send" style="width:100%">Enviar</button>
@@ -68,7 +69,7 @@ const st = () => form.querySelector("input[name=st]:checked").value;
 form.addEventListener("change", () => { $("laterBox").hidden = st() !== "later"; });
 const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
 $("laterDate").min = today.toISOString().slice(0, 10);
-$("laterDate").max = "2026-12-24";
+$("laterDate").max = "2026-11-30";
 
 const msgs = {
   confirmed: ["Presença confirmada!", "Obrigado. Contamos consigo para celebrar este dia especial."],
