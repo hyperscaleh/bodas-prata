@@ -62,7 +62,7 @@ async function boot() {
   if (await Store.session()) { show(); } else { $("login").hidden = false; $("app").hidden = true; }
 }
 async function show() { $("login").hidden = true; $("app").hidden = false; await refresh(); }
-async function refresh() { try { data = await Store.list(); render(); } catch (e) { alert("Erro a carregar: " + e.message); } }
+async function refresh() { if (!data.length) $("rows").innerHTML = '<div class="empty">A carregar...</div>'; try { data = await Store.list(); render(); } catch (e) { alert("Erro a carregar: " + e.message); } }
 
 $("login").addEventListener("submit", async e => {
   e.preventDefault(); $("lerr").hidden = true;
