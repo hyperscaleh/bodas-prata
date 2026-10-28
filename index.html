@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Save the Date · Bodas de Prata</title>
+<meta name="robots" content="noindex">
+<meta property="og:title" content="Save the Date · Bodas de Prata · 26 de dezembro de 2026">
+<meta property="og:description" content="Uma história de amor, fé e família, abençoada por Deus. Confirme a sua presença.">
+<meta property="og:image" content="poster.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Montserrat:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="page">
+<main class="frame">
+  <p class="eyebrow rise d1">Com alegria, convidamos</p>
+  <div class="monogram gold rise d1">25</div>
+  <h1 class="gold rise d2">Save the Date</h1>
+  <p class="date rise d2">26 DE DEZEMBRO DE 2026</p>
+  <div class="orn rise d3"><i></i></div>
+  <h2 class="gold rise d3">Bodas de Prata</h2>
+  <p class="couple gold rise d3">Luciana &amp; Aniceto</p>
+  <div class="orn rise d3"><i></i></div>
+  <p class="lead rise d4">Uma história de amor, fé e família,<br>abençoada por Deus.</p>
+
+  <div class="video-wrap rise d5">
+    <video src="convite.mp4" poster="poster.jpg" controls playsinline preload="metadata"></video>
+  </div>
+
+  <button class="btn rise d6" id="open">Confirmar presença</button>
+
+  <form id="form" hidden novalidate>
+    <div class="row2">
+      <label class="f">Nome<input type="text" id="first" autocomplete="given-name" maxlength="40" required></label>
+      <label class="f">Apelido<input type="text" id="last" autocomplete="family-name" maxlength="40" required></label>
+    </div>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="st" value="confirmed" checked> Confirmo a minha presença</label>
+      <label class="opt"><input type="radio" name="st" value="declined"> Não poderei estar presente</label>
+      <label class="opt"><input type="radio" name="st" value="later"> Ainda não sei, confirmo mais tarde</label>
+    </div>
+    <label class="f" id="laterBox" hidden>Em que dia consegue confirmar?
+      <input type="date" id="laterDate">
+    </label>
+    <input class="hp" type="text" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="btn" type="submit" id="send" style="width:100%">Enviar</button>
+    <p class="msg err" id="err" hidden></p>
+  </form>
+
+  <div class="thanks" id="thanks" hidden>
+    <h3 id="thanksTitle"></h3>
+    <p id="thanksText"></p>
+  </div>
+
+  <div class="orn" style="margin-top:44px"><i></i></div>
+  <p class="verse" style="margin-top:0">“O amor nunca falha.”<small>1 Coríntios 13:8</small></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="store.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const form = $("form");
+$("open").onclick = () => { form.hidden = false; $("open").hidden = true; $("first").focus({ preventScroll: true }); form.scrollIntoView({ behavior: "smooth", block: "center" }); };
+
+const st = () => form.querySelector("input[name=st]:checked").value;
+form.addEventListener("change", () => { $("laterBox").hidden = st() !== "later"; });
+const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+$("laterDate").min = today.toISOString().slice(0, 10);
+$("laterDate").max = "2026-12-24";
+
+const msgs = {
+  confirmed: ["Presença confirmada!", "Obrigado. Contamos consigo para celebrar este dia especial."],
+  declined: ["Obrigado por avisar", "Sentiremos a sua falta. Agradecemos o carinho."],
+  later: ["Anotado!", "Obrigado. Vamos contactá-lo(a) no dia que indicou."]
+};
+const clean = s => s.replace(/\s+/g, " ").trim();
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = $("err"); err.hidden = true;
+  const first = clean($("first").value), last = clean($("last").value), s = st();
+  if (first.length < 2 || last.length < 2) { err.textContent = "Escreva o seu nome e apelido."; err.hidden = false; return; }
+  if (s === "later" && !$("laterDate").value) { err.textContent = "Indique o dia em que consegue confirmar."; err.hidden = false; return; }
+  if ($("hp").value) return;
+  $("send").disabled = true; $("send").textContent = "A enviar...";
+  try {
+    await Store.submitRsvp(first + " " + last, s, $("laterDate").value);
+    form.hidden = true;
+    $("thanksTitle").textContent = msgs[s][0]; $("thanksText").textContent = msgs[s][1];
+    $("thanks").hidden = false; $("thanks").scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch (ex) {
+    err.textContent = "Não foi possível enviar. Tente outra vez."; err.hidden = false;
+    $("send").disabled = false; $("send").textContent = "Enviar";
+  }
+});
+</script>
+</body>
+</html>

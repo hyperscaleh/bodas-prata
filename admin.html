@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel · Bodas de Prata</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Montserrat:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="admin">
+
+  <form id="login" class="login" hidden novalidate>
+    <h1 style="text-align:center">Painel</h1>
+    <label class="f">Email<input type="email" id="em" autocomplete="username"></label>
+    <label class="f">Palavra-passe<input type="password" id="pw" autocomplete="current-password"></label>
+    <button class="btn" style="width:100%" type="submit">Entrar</button>
+    <p class="msg err" id="lerr" hidden></p>
+  </form>
+
+  <div id="app" hidden>
+    <div class="top">
+      <h1 style="margin:0">Bodas de Prata</h1>
+      <div class="acts">
+        <button class="btn small ghost" id="csv">Exportar Excel</button>
+        <button class="btn small ghost" id="out">Sair</button>
+      </div>
+    </div>
+    <div class="demo" id="demo" hidden>Modo demo: os dados ficam só neste browser. Configure o Supabase para uso real.</div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="tabs">
+      <button class="tab on" data-tab="list">Lista dos pais</button>
+      <button class="tab" data-tab="form">Respostas do formulário <span id="nform"></span></button>
+    </div>
+
+    <div class="bar">
+      <input type="text" id="q" placeholder="Procurar nome...">
+      <button class="btn small" id="add">+ Adicionar</button>
+    </div>
+
+    <div class="list" id="rows"></div>
+    <p class="note">Toque num ícone para marcar: ✓ confirmou, ✗ não vai, ⏳ confirma mais tarde, ○ por confirmar.</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="store.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const LBL = { pending: "Por confirmar", confirmed: "Confirmado", declined: "Não vai", later: "Mais tarde" };
+const ICON = { confirmed: "✓", declined: "✗", later: "⏳", pending: "○" };
+let data = [], tab = "list", filter = "all", q = "";
+
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = d => d ? d.split("-").reverse().join("/") : "";
+
+async function boot() {
+  $("demo").hidden = Store.live;
+  if (await Store.session()) { show(); } else { $("login").hidden = false; $("app").hidden = true; }
+}
+async function show() { $("login").hidden = true; $("app").hidden = false; await refresh(); }
+async function refresh() { try { data = await Store.list(); render(); } catch (e) { alert("Erro a carregar: " + e.message); } }
+
+$("login").addEventListener("submit", async e => {
+  e.preventDefault(); $("lerr").hidden = true;
+  try { await Store.login($("em").value.trim(), $("pw").value); show(); }
+  catch (ex) { $("lerr").textContent = "Email ou palavra-passe incorretos."; $("lerr").hidden = false; }
+});
+$("out").onclick = async () => { await Store.logout(); location.reload(); };
+
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
+  tab = b.dataset.tab; document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === b)); render();
+});
+$("q").oninput = e => { q = e.target.value.toLowerCase(); render(); };
+
+function render() {
+  const list = data.filter(g => g.source === "list");
+  const forms = data.filter(g => g.source !== "list");
+  const base = tab === "list" ? list : forms;
+  $("nform").textContent = forms.length ? "(" + forms.length + ")" : "";
+
+  const all = data, cnt = s => all.filter(g => g.status === s).length;
+  const defs = [["all", "Total", all.length, ""], ["confirmed", "Confirmados", cnt("confirmed"), "c"], ["pending", "Por confirmar", cnt("pending"), ""], ["later", "Mais tarde", cnt("later"), "l"], ["declined", "Não vão", cnt("declined"), "d"]];
+  $("stats").innerHTML = defs.map(d => `<div class="stat ${d[3]} ${filter === d[0] ? "on" : ""}" data-f="${d[0]}"><b>${d[2]}</b><span>${d[1]}</span></div>`).join("");
+  $("stats").querySelectorAll(".stat").forEach(s => s.onclick = () => { filter = filter === s.dataset.f ? "all" : s.dataset.f; render(); });
+
+  const rows = base.filter(g => (filter === "all" || g.status === filter) &&
+    (!q || (g.label + " " + (g.given_name || "")).toLowerCase().includes(q)));
+  if (!rows.length) { $("rows").innerHTML = `<div class="empty">${tab === "form" ? "Ainda não há respostas do formulário." : "Nada para mostrar."}</div>`; return; }
+
+  $("rows").innerHTML = rows.map(g => {
+    const extra = [g.given_name ? "Respondeu: " + esc(g.given_name) : "", g.status === "later" && g.later_date ? "confirma a " + fmt(g.later_date) : ""].filter(Boolean).join(" · ");
+    const btns = ["confirmed", "declined", "later", "pending"].map(s => `<button class="sbtn ${s} ${g.status === s ? "on" : ""}" data-id="${g.id}" data-s="${s}" title="${LBL[s]}" aria-label="${LBL[s]}">${ICON[s]}</button>`).join("");
+    const assoc = g.source !== "list" ? `<button class="btn small ghost" data-assoc="${g.id}">Associar à lista</button>` : "";
+    const del = g.source !== "list" ? `<button class="sbtn" data-del="${g.id}" title="Apagar" aria-label="Apagar">🗑</button>` : "";
+    return `<div class="g"><span class="no">${g.list_no || ""}</span>
+      <div class="nm">${esc(g.label)}<span class="badge ${g.status}">${LBL[g.status]}</span>${extra ? `<small>${extra}</small>` : ""}</div>
+      <div class="acts">${btns}${assoc}${del}</div></div>`;
+  }).join("");
+
+  $("rows").querySelectorAll(".sbtn[data-s]").forEach(b => b.onclick = async () => {
+    const id = +b.dataset.id, s = b.dataset.s, patch = { status: s };
+    if (s === "later") { const d = prompt("Dia em que confirma (AAAA-MM-DD), pode deixar vazio:", ""); patch.later_date = d || null; } else patch.later_date = null;
+    await Store.update(id, patch); refresh();
+  });
+  $("rows").querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    if (confirm("Apagar esta resposta?")) { await Store.remove(+b.dataset.del); refresh(); }
+  });
+  $("rows").querySelectorAll("[data-assoc]").forEach(b => b.onclick = () => associate(+b.dataset.assoc));
+}
+
+// Liga uma resposta do formulario a uma linha da lista dos pais.
+async function associate(id) {
+  const r = data.find(g => g.id === id);
+  const free = data.filter(g => g.source === "list" && g.status === "pending");
+  const menu = free.map((g, i) => (i + 1) + ". " + g.label).join("\n");
+  const n = prompt("Quem é " + r.label + " na lista? Escreva o número:\n\n" + menu);
+  const t = free[(parseInt(n, 10) || 0) - 1];
+  if (!t) return;
+  await Store.update(t.id, { status: r.status, later_date: r.later_date, given_name: r.label });
+  await Store.remove(r.id); refresh();
+}
+
+$("add").onclick = async () => {
+  const n = prompt("Nome do convidado:"); if (n && n.trim()) { await Store.add(n.trim()); refresh(); }
+};
+
+$("csv").onclick = () => {
+  const rows = [["N", "Nome na lista", "Respondeu como", "Estado", "Confirma a"]].concat(
+    data.map(g => [g.list_no || "", g.label, g.given_name || "", LBL[g.status], g.later_date || ""]));
+  const csv = "﻿" + rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(";")).join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = "convidados-bodas-de-prata.csv"; a.click();
+};
+
+setInterval(() => { if (!$("app").hidden && document.visibilityState === "visible") refresh(); }, 30000);
+boot();
+</script>
+</body>
+</html>
