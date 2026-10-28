@@ -88,6 +88,11 @@ input:focus, select:focus { outline: 0; border-bottom-width: 2px; padding-bottom
 .opt input:checked::after { transform: scale(1); }
 .opt:has(input:checked) { border-color: var(--gold); background: var(--gold-soft); }
 .deadline { display: block; margin-top: 12px; padding: 10px 12px; border-left: 2px solid var(--gold); background: var(--gold-soft); font-family: var(--serif); font-size: 17px; letter-spacing: 0; text-transform: none; color: var(--ink); line-height: 1.35; }
+.hint { display: block; margin-top: 6px; font-family: var(--serif); font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--pend); }
+.contacts { margin-top: 38px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 36px; }
+.contacts .eyebrow { width: 100%; }
+.contacts p { margin: 0; font-size: 19px; line-height: 1.3; }
+.contacts a { color: var(--gold-lo); text-decoration: none; font-size: 21px; }
 .hp { position: absolute; left: -9999px; }
 .msg { margin-top: 14px; font-size: 17px; }
 .msg.err { color: var(--no); }

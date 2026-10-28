@@ -92,7 +92,7 @@ function render() {
   if (!rows.length) { $("rows").innerHTML = `<div class="empty">${tab === "form" ? "Ainda não há respostas do formulário." : "Nada para mostrar."}</div>`; return; }
 
   $("rows").innerHTML = rows.map(g => {
-    const extra = [g.given_name ? "Respondeu: " + esc(g.given_name) : "", g.status === "later" && g.later_date ? "confirma a " + fmt(g.later_date) : ""].filter(Boolean).join(" · ");
+    const extra = [g.given_name ? "Respondeu: " + esc(g.given_name) : "", g.status === "later" && g.later_date ? "confirma a " + fmt(g.later_date) : "", g.email ? esc(g.email) : ""].filter(Boolean).join(" · ");
     const btns = ["confirmed", "declined", "later", "pending"].map(s => `<button class="sbtn ${s} ${g.status === s ? "on" : ""}" data-id="${g.id}" data-s="${s}" title="${LBL[s]}" aria-label="${LBL[s]}">${ICON[s]}</button>`).join("");
     const assoc = g.source !== "list" ? `<button class="btn small ghost" data-assoc="${g.id}">Associar à lista</button>` : "";
     const del = g.source !== "list" ? `<button class="sbtn" data-del="${g.id}" title="Apagar" aria-label="Apagar">🗑</button>` : "";
@@ -120,7 +120,7 @@ async function associate(id) {
   const n = prompt("Quem é " + r.label + " na lista? Escreva o número:\n\n" + menu);
   const t = free[(parseInt(n, 10) || 0) - 1];
   if (!t) return;
-  await Store.update(t.id, { status: r.status, later_date: r.later_date, given_name: r.label });
+  await Store.update(t.id, { status: r.status, later_date: r.later_date, given_name: r.label, email: r.email });
   await Store.remove(r.id); refresh();
 }
 
@@ -129,8 +129,8 @@ $("add").onclick = async () => {
 };
 
 $("csv").onclick = () => {
-  const rows = [["N", "Nome na lista", "Respondeu como", "Estado", "Confirma a"]].concat(
-    data.map(g => [g.list_no || "", g.label, g.given_name || "", LBL[g.status], g.later_date || ""]));
+  const rows = [["N", "Nome na lista", "Respondeu como", "Estado", "Confirma a", "Email"]].concat(
+    data.map(g => [g.list_no || "", g.label, g.given_name || "", LBL[g.status], g.later_date || "", g.email || ""]));
   const csv = "﻿" + rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(";")).join("\r\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   a.download = "convidados-bodas-de-prata.csv"; a.click();

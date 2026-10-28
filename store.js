@@ -27,12 +27,12 @@
   window.Store = {
     live,
 
-    async submitRsvp(name, status, laterDate) {
-      if (live) { await call({ action: "rsvp", name, status, later_date: laterDate || "" }); return; }
+    async submitRsvp(name, status, laterDate, email) {
+      if (live) { await call({ action: "rsvp", name, status, later_date: laterDate || "", email }); return; }
       const rows = load();
       const hit = rows.find(r => r.source === "form" && r.label.toLowerCase() === name.toLowerCase());
       if (hit) { hit.status = status; hit.later_date = status === "later" ? laterDate : null; hit.updated_at = new Date().toISOString(); }
-      else rows.push({ id: nextId(rows), list_no: null, label: name, given_name: null, status, source: "form",
+      else rows.push({ id: nextId(rows), list_no: null, label: name, given_name: null, email, status, source: "form",
         later_date: status === "later" ? laterDate : null, updated_at: new Date().toISOString() });
       save(rows);
     },
@@ -49,7 +49,8 @@
     },
     async update(id, patch) {
       if (live) { await adm({ action: "update", id, status: patch.status, later_date: patch.later_date || null,
-        ...("given_name" in patch ? { given_name: patch.given_name } : {}) }); return; }
+        ...("given_name" in patch ? { given_name: patch.given_name } : {}),
+        ...("email" in patch ? { email: patch.email } : {}) }); return; }
       const rows = load(); const r = rows.find(x => x.id === id); if (r) Object.assign(r, patch, { updated_at: new Date().toISOString() }); save(rows);
     },
     async add(label) {

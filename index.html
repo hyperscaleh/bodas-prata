@@ -35,6 +35,8 @@
       <label class="f">Nome<input type="text" id="first" autocomplete="given-name" maxlength="40" required></label>
       <label class="f">Apelido<input type="text" id="last" autocomplete="family-name" maxlength="40" required></label>
     </div>
+    <label class="f">Email<input type="email" id="email" autocomplete="email" maxlength="120" inputmode="email" required>
+      <span class="hint">Enviaremos a confirmação e as novidades para este email.</span></label>
     <div class="opts">
       <label class="opt"><input type="radio" name="st" value="confirmed" checked> Confirmo a minha presença</label>
       <label class="opt"><input type="radio" name="st" value="declined"> Não poderei estar presente</label>
@@ -54,7 +56,12 @@
     <p id="thanksText"></p>
   </div>
 
-  <div class="orn" style="margin-top:44px"><i></i></div>
+  <div class="contacts">
+    <p class="eyebrow" style="margin-bottom:10px">Contactos</p>
+    <p><b>Aniceto</b><br><a href="tel:+258843086810">843 086 810</a></p>
+    <p><b>Luciana</b><br><a href="tel:+258829494880">829 494 880</a></p>
+  </div>
+  <div class="orn" style="margin-top:36px"><i></i></div>
   <p class="verse" style="margin-top:0">“O amor nunca falha.”<small>1 Coríntios 13:8</small></p>
 </main>
 
@@ -72,22 +79,23 @@ $("laterDate").min = today.toISOString().slice(0, 10);
 $("laterDate").max = "2026-11-30";
 
 const msgs = {
-  confirmed: ["Presença confirmada!", "Obrigado. Contamos consigo para celebrar este dia especial."],
+  confirmed: ["Presença confirmada!", "Obrigado. Enviámos um email com a data para guardar no seu calendário."],
   declined: ["Obrigado por avisar", "Sentiremos a sua falta. Agradecemos o carinho."],
-  later: ["Anotado!", "Obrigado. Vamos contactá-lo(a) no dia que indicou."]
+  later: ["Anotado!", "Obrigado. Enviámos um email e voltaremos a lembrar antes do prazo de 30 de novembro."]
 };
 const clean = s => s.replace(/\s+/g, " ").trim();
 
 form.addEventListener("submit", async e => {
   e.preventDefault();
   const err = $("err"); err.hidden = true;
-  const first = clean($("first").value), last = clean($("last").value), s = st();
+  const first = clean($("first").value), last = clean($("last").value), s = st(), mail = $("email").value.trim();
   if (first.length < 2 || last.length < 2) { err.textContent = "Escreva o seu nome e apelido."; err.hidden = false; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) { err.textContent = "Escreva um email válido."; err.hidden = false; return; }
   if (s === "later" && !$("laterDate").value) { err.textContent = "Indique o dia em que consegue confirmar."; err.hidden = false; return; }
   if ($("hp").value) return;
   $("send").disabled = true; $("send").textContent = "A enviar...";
   try {
-    await Store.submitRsvp(first + " " + last, s, $("laterDate").value);
+    await Store.submitRsvp(first + " " + last, s, $("laterDate").value, mail);
     form.hidden = true;
     $("thanksTitle").textContent = msgs[s][0]; $("thanksText").textContent = msgs[s][1];
     $("thanks").hidden = false; $("thanks").scrollIntoView({ behavior: "smooth", block: "center" });
