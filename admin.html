@@ -14,8 +14,7 @@
 
   <form id="login" class="login" hidden novalidate>
     <h1 style="text-align:center">Painel</h1>
-    <label class="f">Email<input type="email" id="em" autocomplete="username"></label>
-    <label class="f">Palavra-passe<input type="password" id="pw" autocomplete="current-password"></label>
+    <label class="f">Palavra-passe<input type="password" id="pw" autocomplete="current-password" autofocus></label>
     <button class="btn" style="width:100%" type="submit">Entrar</button>
     <p class="msg err" id="lerr" hidden></p>
   </form>
@@ -28,7 +27,7 @@
         <button class="btn small ghost" id="out">Sair</button>
       </div>
     </div>
-    <div class="demo" id="demo" hidden>Modo demo: os dados ficam só neste browser. Configure o Supabase para uso real.</div>
+    <div class="demo" id="demo" hidden>Modo demo: os dados ficam só neste browser.</div>
 
     <div class="stats" id="stats"></div>
 
@@ -47,7 +46,6 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="store.js"></script>
 <script>
@@ -68,8 +66,8 @@ async function refresh() { try { data = await Store.list(); render(); } catch (e
 
 $("login").addEventListener("submit", async e => {
   e.preventDefault(); $("lerr").hidden = true;
-  try { await Store.login($("em").value.trim(), $("pw").value); show(); }
-  catch (ex) { $("lerr").textContent = "Email ou palavra-passe incorretos."; $("lerr").hidden = false; }
+  try { await Store.login($("pw").value); show(); }
+  catch (ex) { $("lerr").textContent = "Palavra-passe incorreta."; $("lerr").hidden = false; }
 });
 $("out").onclick = async () => { await Store.logout(); location.reload(); };
 
@@ -104,14 +102,14 @@ function render() {
   }).join("");
 
   $("rows").querySelectorAll(".sbtn[data-s]").forEach(b => b.onclick = async () => {
-    const id = +b.dataset.id, s = b.dataset.s, patch = { status: s };
+    const id = b.dataset.id, s = b.dataset.s, patch = { status: s };
     if (s === "later") { const d = prompt("Dia em que confirma (AAAA-MM-DD), pode deixar vazio:", ""); patch.later_date = d || null; } else patch.later_date = null;
     await Store.update(id, patch); refresh();
   });
   $("rows").querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
-    if (confirm("Apagar esta resposta?")) { await Store.remove(+b.dataset.del); refresh(); }
+    if (confirm("Apagar esta resposta?")) { await Store.remove(b.dataset.del); refresh(); }
   });
-  $("rows").querySelectorAll("[data-assoc]").forEach(b => b.onclick = () => associate(+b.dataset.assoc));
+  $("rows").querySelectorAll("[data-assoc]").forEach(b => b.onclick = () => associate(b.dataset.assoc));
 }
 
 // Liga uma resposta do formulario a uma linha da lista dos pais.
